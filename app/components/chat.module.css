@@ -25,13 +25,14 @@
 
 .input:focus {
   outline: none !important;
-  border-color: #000;
+  border-color: #00008B;
   background-color: white;
 }
 
 .button {
   padding: 8px 24px;
-  background-color: #000;
+  background-color: #00008B
+  ;
   color: white;
   border: none;
   font-size: 1em;
@@ -72,7 +73,7 @@
 .userMessage {
   align-self: flex-end;
   color: #fff;
-  background-color: #000;
+  background-color: #00008B;
 }
 
 .assistantMessage {
