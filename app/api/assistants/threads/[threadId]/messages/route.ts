@@ -1,6 +1,6 @@
 import { assistantId } from "@/app/assistant-config";
 import { openai } from "@/app/openai";
-
+export const maxDuration = 60;
 export const runtime = "nodejs";
 
 // Send a new message to a thread

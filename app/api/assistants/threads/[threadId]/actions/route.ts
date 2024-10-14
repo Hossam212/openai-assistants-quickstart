@@ -1,5 +1,5 @@
 import { openai } from "@/app/openai";
-
+export const maxDuration = 60;
 // Send a new message to a thread
 export async function POST(request, { params: { threadId } }) {
   const { toolCallOutputs, runId } = await request.json();
