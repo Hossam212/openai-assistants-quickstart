@@ -7,6 +7,7 @@ import Markdown from "react-markdown";
 // @ts-expect-error - no types for this yet
 import { AssistantStreamEvent } from "openai/resources/beta/assistants/assistants";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
+import { getSupabaseClient } from "../utils/supabase";
 
 type MessageProps = {
   role: "user" | "assistant" | "code";
@@ -62,6 +63,7 @@ const Chat = ({
 }: ChatProps) => {
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState([]);
+  const [userImage, setUserImage] = useState<String | null>(null);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
 
@@ -86,16 +88,30 @@ const Chat = ({
     createThread();
   }, []);
 
-  const sendMessage = async (text) => {
+  const sendMessage = async (text, imageUrl) => {
+    console.log("sending message", text, imageUrl);
     const response = await fetch(
       `/api/assistants/threads/${threadId}/messages`,
       {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
-          content: text,
-        }),
+          content: [
+            ...(imageUrl ? [{
+              type: "image_url",
+              image_url: { url: imageUrl }
+            }] : []),
+            {
+              type: "text",
+              text: text
+            },
+          ]
+        })
       }
     );
+
     const stream = AssistantStream.fromReadableStream(response.body);
     handleReadableStream(stream);
   };
@@ -120,23 +136,63 @@ const Chat = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!userInput.trim()) return;
-    sendMessage(userInput);
+    if (!userInput.trim() && !userImage) return;
+    sendMessage(userInput, userImage);
     setMessages((prevMessages) => [
       ...prevMessages,
       { role: "user", text: userInput },
     ]);
     setUserInput("");
+    setUserImage(null);
     setInputDisabled(true);
     scrollToBottom();
   };
 
+  const supabase = getSupabaseClient();
+
+  const uploadToSupabase = async (file) => {
+    const { data, error } = await supabase.storage
+      .from("testing-assistant")
+      .upload(`images/${file.name}`, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Error uploading image:", error);
+      return null;
+    }
+    try {
+      const { data: publicURL } = supabase
+        .storage
+        .from("testing-assistant")
+        .getPublicUrl(`images/${file.name}`);
+      return publicURL;
+    } catch (urlError) {
+      if (urlError) {
+        console.error("Error getting public URL:", urlError);
+        return null;
+      }
+
+    };
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    const imageUrl = await uploadToSupabase(file);
+    console.log(imageUrl['publicUrl'])
+    if (imageUrl) {
+      setUserImage(imageUrl['publicUrl']);
+      setImage(imageUrl['publicUrl']);
+    }
+  };
   /* Stream Event Handlers */
 
   // textCreated - create new assistant message
   const handleTextCreated = () => {
     appendMessage("assistant", "");
   };
+
 
   // textDelta - append text to last assistant message
   const handleTextDelta = (delta) => {
@@ -245,8 +301,10 @@ const Chat = ({
       })
       return [...prevMessages.slice(0, -1), updatedLastMessage];
     });
-    
+
   }
+  const fileInuputRef = useRef(null);
+  const [image, setImage] = useState<string | null>(null);
 
   return (
     <div className={styles.chatContainer}>
@@ -260,6 +318,19 @@ const Chat = ({
         onSubmit={handleSubmit}
         className={`${styles.inputForm} ${styles.clearfix}`}
       >
+        <div
+          className="bg-blue-500 flex items-center rounded-full p-5 text-sm text-white cursor-pointer"
+          onClick={() => fileInuputRef.current.click()}
+        >
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="hidden"
+            ref={fileInuputRef}
+          />
+          Upload Image
+        </div>
+        <img src={image} className="w-10" alt="uploaded image" />
         <input
           type="text"
           className={styles.input}
