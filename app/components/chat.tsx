@@ -66,6 +66,7 @@ const Chat = ({
   const [userImage, setUserImage] = useState<String | null>(null);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
+  const [usageMetrics, setUsageMetrics] = useState({});
 
   // automatically scroll to bottom of chat
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -260,7 +261,10 @@ const Chat = ({
     stream.on("event", (event) => {
       if (event.event === "thread.run.requires_action")
         handleRequiresAction(event);
-      if (event.event === "thread.run.completed") handleRunCompleted();
+      if (event.event === "thread.run.completed") {
+        event.data.usage && setUsageMetrics(event.data.usage);
+        handleRunCompleted();
+      }
     });
   };
 
@@ -306,8 +310,34 @@ const Chat = ({
   const fileInuputRef = useRef(null);
   const [image, setImage] = useState<string | null>(null);
 
+  const PROMPT_COST_PER_1K = 0.000150 ; // Replace with actual cost per 1,000 prompt tokens
+  const COMPLETION_COST_PER_1K = 0.000600; // Replace with actual cost per 1,000 completion tokens
+
+  // Function to calculate the price
+  function calculateGPT4MiniCost(usageMetrics) {
+    const promptTokens = usageMetrics.prompt_tokens;
+    const completionTokens = usageMetrics.completion_tokens;
+
+    // Calculate cost for prompt and completion tokens
+    const promptCost = (promptTokens / 1000) * PROMPT_COST_PER_1K;
+    const completionCost = (completionTokens / 1000) * COMPLETION_COST_PER_1K;
+
+    // Total cost
+    const totalCost = promptCost + completionCost;
+
+    return totalCost.toFixed(4); // Adjust decimal places as needed
+  }
+
   return (
+    
     <div className={styles.chatContainer}>
+      <div className={styles.usageMetrics}>
+        {usageMetrics && (
+          <div>
+            <strong>Cost:</strong> ${calculateGPT4MiniCost(usageMetrics)}
+          </div>
+        )}
+      </div>
       <div className={styles.messages}>
         {messages.map((msg, index) => (
           <Message key={index} role={msg.role} text={msg.text} />
