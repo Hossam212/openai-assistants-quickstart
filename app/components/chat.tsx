@@ -11,7 +11,7 @@ import { getSupabaseClient } from "../utils/supabase";
 import { track } from "../lib/analytics";
 
 type MessageProps = {
-  role: "user" | "assistant" | "code";
+  role: "user" | "assistant" | "code" | "image";
   text: string;
 };
 
@@ -40,6 +40,14 @@ const CodeMessage = ({ text }: { text: string }) => {
   );
 };
 
+const ImageMessage = ({ url }: { url: string }) => {
+  return (
+    <div className="py-2 px-4 self-end max-w-[50%]">
+      <img src={url} alt="" />
+    </div>
+  );
+}
+
 const Message = ({ role, text }: MessageProps) => {
   switch (role) {
     case "user":
@@ -48,6 +56,8 @@ const Message = ({ role, text }: MessageProps) => {
       return <AssistantMessage text={text} />;
     case "code":
       return <CodeMessage text={text} />;
+    case "image":
+      return <ImageMessage url={text} />;
     default:
       return null;
   }
@@ -64,7 +74,7 @@ const Chat = ({
 }: ChatProps) => {
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState([]);
-  const [userImage, setUserImage] = useState<String | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
   const [usageMetrics, setUsageMetrics] = useState({});
@@ -92,7 +102,6 @@ const Chat = ({
   }, []);
 
   const sendMessage = async (text, imageUrl) => {
-    console.log("sending message", text, imageUrl);
     const response = await fetch(
       `/api/assistants/threads/${threadId}/messages`,
       {
@@ -143,6 +152,8 @@ const Chat = ({
     sendMessage(userInput, userImage);
     setMessages((prevMessages) => [
       ...prevMessages,
+      //if no image don't send image role
+      ...(userImage ? [{ role: "image", text: userImage }] : []),
       { role: "user", text: userInput },
     ]);
     setUserInput("");
@@ -195,7 +206,6 @@ const Chat = ({
     console.log(imageUrl['publicUrl'])
     if (imageUrl) {
       setUserImage(imageUrl['publicUrl']);
-      setImage(imageUrl['publicUrl']);
     }
   };
   /* Stream Event Handlers */
@@ -351,7 +361,7 @@ const Chat = ({
       </div>
       <form
         onSubmit={handleSubmit}
-        className="flex p-2"
+        className="flex p-2 w-full justify-center"
       >
         <div
           className="bg-blue-500 flex items-center rounded-full p-5 text-white cursor-pointer"
@@ -365,7 +375,7 @@ const Chat = ({
           />
           Upload Image
         </div>
-        {image && <img src={image} className="w-10" alt="uploaded image" />}
+        {userImage && <img src={userImage} className="w-10" alt="uploaded image" />}
         <input
           type="text"
           className="w-[50%] border-2 border-gray-200 rounded-full p-4 mx-4"
