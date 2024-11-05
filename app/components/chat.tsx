@@ -162,6 +162,9 @@ const Chat = ({
     track("Custom Ruu Token Price", {
       metrics: cost,
     })
+    track("Custom ruu message sent", {
+      message: userInput,
+    })
     scrollToBottom();
 
   };
@@ -206,6 +209,9 @@ const Chat = ({
     console.log(imageUrl['publicUrl'])
     if (imageUrl) {
       setUserImage(imageUrl['publicUrl']);
+      track("Custom ruu image uploaded", {
+        image: imageUrl['publicUrl'],
+      })
     }
   };
   /* Stream Event Handlers */
