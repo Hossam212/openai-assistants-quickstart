@@ -8,6 +8,7 @@ import Markdown from "react-markdown";
 import { AssistantStreamEvent } from "openai/resources/beta/assistants/assistants";
 import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
 import { getSupabaseClient } from "../utils/supabase";
+import { track } from "../lib/analytics";
 
 type MessageProps = {
   role: "user" | "assistant" | "code";
@@ -67,6 +68,7 @@ const Chat = ({
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
   const [usageMetrics, setUsageMetrics] = useState({});
+  const [cost, setCost] = useState<number>(0);
 
   // automatically scroll to bottom of chat
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -146,8 +148,17 @@ const Chat = ({
     setUserInput("");
     setUserImage(null);
     setInputDisabled(true);
+    track("Custom Ruu Token Price", {
+      metrics: cost,
+    })
     scrollToBottom();
+
   };
+
+  useEffect(() => {
+    const tokenCost = calculateGPT4MiniCost(usageMetrics);
+    setCost(cost + tokenCost);
+  }, [usageMetrics])
 
   const supabase = getSupabaseClient();
 
@@ -310,34 +321,28 @@ const Chat = ({
   const fileInuputRef = useRef(null);
   const [image, setImage] = useState<string | null>(null);
 
-  const PROMPT_COST_PER_1K = 0.000150 ; // Replace with actual cost per 1,000 prompt tokens
-  const COMPLETION_COST_PER_1K = 0.000600; // Replace with actual cost per 1,000 completion tokens
+  const PROMPT_COST_PER_1K = 0.000150;
+  const COMPLETION_COST_PER_1K = 0.000600;
 
-  // Function to calculate the price
-  function calculateGPT4MiniCost(usageMetrics) {
+
+  function calculateGPT4MiniCost(usageMetrics): number {
     const promptTokens = usageMetrics.prompt_tokens;
     const completionTokens = usageMetrics.completion_tokens;
 
-    // Calculate cost for prompt and completion tokens
     const promptCost = (promptTokens / 1000) * PROMPT_COST_PER_1K;
     const completionCost = (completionTokens / 1000) * COMPLETION_COST_PER_1K;
 
-    // Total cost
     const totalCost = promptCost + completionCost;
+    if (isNaN(totalCost)) {
+      return 0;
+    }
 
-    return totalCost.toFixed(4); // Adjust decimal places as needed
+    return Math.round(totalCost * 1e5) / 1e5;
   }
 
   return (
-    
-    <div className={styles.chatContainer}>
-      <div className={styles.usageMetrics}>
-        {usageMetrics && (
-          <div>
-            <strong>Cost:</strong> ${calculateGPT4MiniCost(usageMetrics)}
-          </div>
-        )}
-      </div>
+
+    <div className="flex w-full h-full flex-col-reverse">
       <div className={styles.messages}>
         {messages.map((msg, index) => (
           <Message key={index} role={msg.role} text={msg.text} />
@@ -346,10 +351,10 @@ const Chat = ({
       </div>
       <form
         onSubmit={handleSubmit}
-        className={`${styles.inputForm} ${styles.clearfix}`}
+        className="flex p-2"
       >
         <div
-          className="bg-blue-500 flex items-center rounded-full p-5 text-sm text-white cursor-pointer"
+          className="bg-blue-500 flex items-center rounded-full p-5 text-white cursor-pointer"
           onClick={() => fileInuputRef.current.click()}
         >
           <input
@@ -360,22 +365,35 @@ const Chat = ({
           />
           Upload Image
         </div>
-        <img src={image} className="w-10" alt="uploaded image" />
+        {image && <img src={image} className="w-10" alt="uploaded image" />}
         <input
           type="text"
-          className={styles.input}
+          className="w-[50%] border-2 border-gray-200 rounded-full p-4 mx-4"
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           placeholder="Enter your question"
         />
         <button
           type="submit"
-          className={styles.button}
+          className="bg-blue-500 text-white px-4 py-2 rounded-full"
           disabled={inputDisabled}
         >
           Send
         </button>
       </form>
+      <div className="absolute top-0 left-2">
+      {usageMetrics && (
+          <div className="flex flex-col">
+            <div>
+              <strong>Total Cost:</strong>
+              <p>{Math.round(cost * 1e5) / 1e5}</p>
+            </div>
+            <div>
+              <strong>Single Prompt Cost:</strong> <p>{calculateGPT4MiniCost(usageMetrics)}</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
