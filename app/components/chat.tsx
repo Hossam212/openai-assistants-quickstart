@@ -330,26 +330,68 @@ const Chat = ({
 
   return (
     
-    <div className={styles.chatContainer}>
-      <div className={styles.usageMetrics}>
-        {usageMetrics && (
-          <div>
-            <strong>Cost:</strong> ${calculateGPT4MiniCost(usageMetrics)}
-          </div>
-        )}
+<div className="flex flex-col items-center justify-center min-h-screen bg-[#f7f7f7]">
+
+<div className="fixed top-0 w-full h-[48px] py-2 bg-white border-b border-neutral-200 z-10">
+  <div className="w-full max-w-[1160px] mx-auto flex items-center justify-between h-full px-6">
+    <div className="flex items-center gap-4">
+      {/* Logo */}
+      <img src="/images/logo.svg" alt="Logo" />
+      {/* Demo Badge */}
+      <div className="px-3 py-1.5 bg-[#c1eaff] rounded-full flex items-center">
+        <div className="text-center text-[#1f1f1f] text-xs font-medium font-['Poppins'] leading-[14px]">Demo</div>
       </div>
+    </div>
+  </div>
+</div>
+
+  {/* Conditionally render the title and subtitle */}
+  {messages.length === 0 && (
+    <>
+      {/* Title */}
+      <div className="text-center text-[#1f1f1f] text-[56px] font-semibold font-['Poppins'] leading-[72px]">
+        Welcome to Narmer AI
+      </div>
+
+      {/* Subtitle with a 24px margin top */}
+      <div className="text-center text-[#7a7a7a] text-2xl font-semibold font-['Poppins'] leading-loose mt-6">
+        Smarter, faster study help, made fun.
+      </div>
+    </>
+  )}
+
+  {/* Chat and Input Container */}
+  <div className="flex flex-col items-center mt-8 w-full h-full bg-[#f7f7f7]">
+    {/* Messages Section */}
+    <div className={`${styles.chatContainer} flex-grow w-full overflow-auto`} style={{ maxHeight: 'calc(100vh - 150px)' }}>
       <div className={styles.messages}>
         {messages.map((msg, index) => (
           <Message key={index} role={msg.role} text={msg.text} />
         ))}
-        <div ref={messagesEndRef} />
+        {/* Spacer to create space below the last message */}
+        <div ref={messagesEndRef} className="mb-12" />
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className={`${styles.inputForm} ${styles.clearfix}`}
-      >
+    </div>
+
+    {/* Centered Input Form */}
+    <form
+      onSubmit={handleSubmit}
+      className={`w-[950px] h-20 mt-12 flex items-center bg-white rounded-2xl shadow border border-[#f0f2f5] pl-5 pr-4 ${messages.length > 0 ? "absolute bottom-0" : ""}`}
+    >
+      {/* Text Input Field */}
+      <input
+        type="text"
+        className="flex-grow text-[#7a7a7a] text-base font-medium font-['Poppins'] outline-none placeholder-opacity-80"
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        placeholder="Ask me anything..."
+      />
+
+      {/* Actions Section */}
+      <div className="flex items-center gap-4 ml-4">
+        {/* File Upload */}
         <div
-          className="bg-blue-500 flex items-center rounded-full p-5 text-sm text-white cursor-pointer"
+          className="cursor-pointer w-6 h-6 flex justify-center items-center"
           onClick={() => fileInuputRef.current.click()}
         >
           <input
@@ -358,25 +400,42 @@ const Chat = ({
             className="hidden"
             ref={fileInuputRef}
           />
-          Upload Image
+          {/* Add your upload icon here */}
+          <svg className="translate-x-[40px]" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="Line Rounded/Photo">
+              <path id="Element" d="M1.80005 17.6276L5.66365 12.7129C6.75922 11.3192 8.85497 11.2736 10.0101 12.6183L13.4069 16.5724M10.4736 13.1579C11.9328 11.3017 13.9659 8.67204 14.0983 8.50095C14.1029 8.49483 14.1074 8.48905 14.1122 8.48298C15.2099 7.09833 17.2988 7.05589 18.4515 8.39759L21.8483 12.3517M4.61384 22.2H19.3863C20.9403 22.2 22.2 20.9403 22.2 19.3862V4.61378C22.2 3.05977 20.9403 1.79999 19.3863 1.79999H4.61384C3.05983 1.79999 1.80005 3.05977 1.80005 4.61378V19.3862C1.80005 20.9403 3.05983 22.2 4.61384 22.2Z" stroke="#666F8D" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+          </svg>
+
         </div>
-        <img src={image} className="w-10" alt="uploaded image" />
-        <input
-          type="text"
-          className={styles.input}
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Enter your question"
-        />
+        
+        {/* Vertical Divider */}
+        <div className="self-stretch py-1.5 mx-1 translate-x-[40px]">
+  <div className="w-9 self-stretch origin-top-left rotate-90 border border-[#f0f2f5]" />
+</div>
+
+        {/* Send Button */}
         <button
           type="submit"
-          className={styles.button}
+          className="w-12 h-12 bg-[#00aaff] opacity-20 rounded-lg shadow-inner border border-[#00aaff] flex justify-center items-center"
           disabled={inputDisabled}
         >
-          Send
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g id="Filled/Send">
+              <path id="Element" d="M17.185 1.56652L17.1851 1.56648C17.5407 1.45209 17.9255 1.54371 18.1909 1.80915C18.4557 2.0739 18.5491 2.45791 18.4346 2.81657C18.4345 2.81671 18.4345 2.81685 18.4345 2.817L13.6191 17.7927L13.6189 17.7932C13.4976 18.172 13.1806 18.4313 12.7838 18.4754C12.7408 18.4797 12.7019 18.4819 12.6672 18.4819C12.3163 18.4819 11.9991 18.3024 11.8159 17.9889L8.91695 13.0187L13.2271 8.70863C13.7619 8.17378 13.7619 7.30668 13.2271 6.77183C12.6922 6.23698 11.8251 6.23698 11.2903 6.77183L11.2902 6.77187L6.98127 11.0819L2.0107 8.18278L2.0103 8.18255C1.66489 7.98151 1.47997 7.61561 1.52334 7.21915L1.52335 7.21905C1.5668 6.82101 1.82579 6.50375 2.20749 6.38093L17.185 1.56652Z" fill="white" stroke="white"/>
+            </g>
+          </svg>        
         </button>
-      </form>
-    </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+
   );
 };
 
